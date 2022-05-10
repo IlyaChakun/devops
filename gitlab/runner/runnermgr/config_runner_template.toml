@@ -25,7 +25,7 @@ check_interval = 0  # Defines the interval length, in seconds, between new jobs 
     Shared = true
     [runners.cache.s3]
     ServerAddress = "s3.amazonaws.com"
-      AccessKey = "AKIA3PQ72424FPORFV7M"
-      SecretKey = "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"
+      AccessKey = ""
+      SecretKey = "" # iam with s3 access
       BucketName = "gitlab-cache"
       BucketLocation = "us-east-1"
