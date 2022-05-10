@@ -4,6 +4,10 @@ Description: Version 13 Base 6F
 Parameters:
   EnvironmentName:
     Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
     Description: "The EnvironmentName used namespace all resources to allow different environments (uat, prod, rc)"
   ServiceName:
     Type: String
@@ -107,7 +111,7 @@ Resources:
       Memory: !If [ ProdEnv, "1GB", ".5GB" ]
       ContainerDefinitions:
         - Name: !Ref ServiceName
-          Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ServiceName}:latest
+          Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EnvironmentName}-${ServiceName}:latest
           Memory: !If [ ProdEnv, "1024", "512" ]
           PortMappings:
             - ContainerPort: 8080
@@ -164,115 +168,114 @@ Resources:
         - 'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole'
 
     # Enable autoscaling for the service
-    ScalableTarget:
-      Type: AWS::ApplicationAutoScaling::ScalableTarget
-      Properties:
-        ServiceNamespace: 'ecs'
-        ScalableDimension: 'ecs:service:DesiredCount'
-        ResourceId:
-          Fn::Join:
-            - '/'
-            - - service
-              - Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
-              - !Ref 'ServiceApi'
-        MinCapacity: 2
-        MaxCapacity: 10
-        RoleARN:
-          Fn::ImportValue: !Sub ${EnvironmentName}:AutoscalingRole
+  ScalableTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      ServiceNamespace: 'ecs'
+      ScalableDimension: 'ecs:service:DesiredCount'
+      ResourceId:
+        Fn::Join:
+          - '/'
+          - - service
+            - Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
+            - !Ref 'ServiceApi'
+      MinCapacity: 2
+      MaxCapacity: 10
+      RoleARN: !Ref ECSServiceAutoScalingRole
 
     # Create scaling policies that describe how to scale the service up and down.
-    ScaleDownPolicy:
-      Type: AWS::ApplicationAutoScaling::ScalingPolicy
-      DependsOn: ScalableTarget
-      Properties:
-        PolicyName: !Sub scale-${EnvironmentName}-${ServiceName}-down
-        PolicyType: StepScaling
-        ResourceId:
-          Fn::Join:
-            - '/'
-            - - service
-              - Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
-              - !Ref 'ServiceApi'
-        ScalableDimension: 'ecs:service:DesiredCount'
-        ServiceNamespace: 'ecs'
-        StepScalingPolicyConfiguration:
-          AdjustmentType: 'ChangeInCapacity'
-          StepAdjustments:
-            - MetricIntervalUpperBound: 0
-              ScalingAdjustment: -1
-          MetricAggregationType: 'Average'
-          Cooldown: 60
+  ScaleDownPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    DependsOn: ScalableTarget
+    Properties:
+      PolicyName: !Sub scale-${EnvironmentName}-${ServiceName}-down
+      PolicyType: StepScaling
+      ResourceId:
+        Fn::Join:
+          - '/'
+          - - service
+            - Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
+            - !Ref 'ServiceApi'
+      ScalableDimension: 'ecs:service:DesiredCount'
+      ServiceNamespace: 'ecs'
+      StepScalingPolicyConfiguration:
+        AdjustmentType: 'ChangeInCapacity'
+        StepAdjustments:
+          - MetricIntervalUpperBound: 0
+            ScalingAdjustment: -1
+        MetricAggregationType: 'Average'
+        Cooldown: 60
 
-    ScaleUpPolicy:
-      Type: AWS::ApplicationAutoScaling::ScalingPolicy
-      DependsOn: ScalableTarget
-      Properties:
-        PolicyName: !Sub scale-${EnvironmentName}-${ServiceName}-up
-        PolicyType: StepScaling
-        ResourceId:
-          Fn::Join:
-            - '/'
-            - - service
-              - Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
-              - !Ref 'ServiceApi'
-        ScalableDimension: 'ecs:service:DesiredCount'
-        ServiceNamespace: 'ecs'
-        StepScalingPolicyConfiguration:
-          AdjustmentType: 'ChangeInCapacity'
-          StepAdjustments:
-            - MetricIntervalLowerBound: 0
-              MetricIntervalUpperBound: 15
-              ScalingAdjustment: 1
-            - MetricIntervalLowerBound: 15
-              MetricIntervalUpperBound: 25
-              ScalingAdjustment: 2
-            - MetricIntervalLowerBound: 25
-              ScalingAdjustment: 3
-          MetricAggregationType: 'Average'
-          Cooldown: 60
+  ScaleUpPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    DependsOn: ScalableTarget
+    Properties:
+      PolicyName: !Sub scale-${EnvironmentName}-${ServiceName}-up
+      PolicyType: StepScaling
+      ResourceId:
+        Fn::Join:
+          - '/'
+          - - service
+            - Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
+            - !Ref 'ServiceApi'
+      ScalableDimension: 'ecs:service:DesiredCount'
+      ServiceNamespace: 'ecs'
+      StepScalingPolicyConfiguration:
+        AdjustmentType: 'ChangeInCapacity'
+        StepAdjustments:
+          - MetricIntervalLowerBound: 0
+            MetricIntervalUpperBound: 15
+            ScalingAdjustment: 1
+          - MetricIntervalLowerBound: 15
+            MetricIntervalUpperBound: 25
+            ScalingAdjustment: 2
+          - MetricIntervalLowerBound: 25
+            ScalingAdjustment: 3
+        MetricAggregationType: 'Average'
+        Cooldown: 60
 
     # Create alarms to trigger the scaling policies
-    LowCpuUsageAlarm:
-      Type: AWS::CloudWatch::Alarm
-      Properties:
-        AlarmName: !Sub low-cpu-${EnvironmentName}-${ServiceName}
-        AlarmDescription: !Sub "Low CPU utilization for service ${ServiceName} in environment ${EnvironmentName}"
-        MetricName: CPUUtilization
-        Namespace: AWS/ECS
-        Dimensions:
-          - Name: ServiceName
-            Value: !Ref 'ServiceApi'
-          - Name: ClusterName
-            Value:
-              Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
-        Statistic: Average
-        Period: 60
-        EvaluationPeriods: 1
-        Threshold: 20
-        ComparisonOperator: LessThanOrEqualToThreshold
-        AlarmActions:
-          - !Ref ScaleDownPolicy
+  LowCpuUsageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub low-cpu-${EnvironmentName}-${ServiceName}
+      AlarmDescription: !Sub "Low CPU utilization for service ${ServiceName} in environment ${EnvironmentName}"
+      MetricName: CPUUtilization
+      Namespace: AWS/ECS
+      Dimensions:
+        - Name: ServiceName
+          Value: !Ref 'ServiceApi'
+        - Name: ClusterName
+          Value:
+            Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
+      Statistic: Average
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 20
+      ComparisonOperator: LessThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref ScaleDownPolicy
 
-    HighCpuUsageAlarm:
-      Type: AWS::CloudWatch::Alarm
-      Properties:
-        AlarmName: !Sub high-cpu-${EnvironmentName}-${ServiceName}
-        AlarmDescription: !Sub "High CPU utilization for service ${ServiceName} in environment ${EnvironmentName}"
-        MetricName: CPUUtilization
-        Namespace: AWS/ECS
-        Dimensions:
-          - Name: ServiceName
-            Value: !Ref 'ServiceApi'
-          - Name: ClusterName
-            Value:
-              Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
-        Statistic: Average
-        Period: 60
-        EvaluationPeriods: 1
-        Threshold: 70
-        ComparisonOperator: GreaterThanOrEqualToThreshold
-        AlarmActions:
-          - !Ref ScaleUpPolicy
+  HighCpuUsageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub high-cpu-${EnvironmentName}-${ServiceName}
+      AlarmDescription: !Sub "High CPU utilization for service ${ServiceName} in environment ${EnvironmentName}"
+      MetricName: CPUUtilization
+      Namespace: AWS/ECS
+      Dimensions:
+        - Name: ServiceName
+          Value: !Ref 'ServiceApi'
+        - Name: ClusterName
+          Value:
+            Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
+      Statistic: Average
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 70
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref ScaleUpPolicy
 
 
 # These are the values output by the CloudFormation template. Be careful

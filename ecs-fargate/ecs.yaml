@@ -4,7 +4,10 @@ Description: Version 1 - Fargate
 Parameters:
   EnvironmentName:
     Type: String
-    Default: staging
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
     Description: "A friendly environment name that will be used for namespacing all cluster resources. Example: dev, qa, staging, or prod"
 
 Resources:
