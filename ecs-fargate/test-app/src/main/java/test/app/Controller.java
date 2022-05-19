@@ -22,6 +22,19 @@ public class Controller {
         return "Get works!";
     }
 
+    @GetMapping("/test-load-cpu")
+    public String loadCpu() {
+        int numCore = 2;
+        int numThreadsPerCore = 2;
+        double load = 0.8;
+        final long duration = 100000;
+        for (int thread = 0; thread < numCore * numThreadsPerCore; thread++) {
+            new BusyThread("Thread" + thread, load, duration).start();
+        }
+
+        return "done";
+    }
+
     @GetMapping("/test-get-second-service")
     public String testGetSecondService() throws IOException {
 
@@ -39,7 +52,6 @@ public class Controller {
 //        String serviceResponse = mapper.readValue(Objects.requireNonNull(response.body()).byteStream(), String.class);
 //
 //        System.out.println(serviceResponse);
-
 
 
         return "Get works!";

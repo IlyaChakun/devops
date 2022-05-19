@@ -7,7 +7,7 @@ check_interval = 0  # Defines the interval length, in seconds, between new jobs 
 [[runners]]
   name = "${RUNNER_NAME}"
   url = "${GITLAB_URL}/" # default url of the gitlab server
-  token = "${RUNNER_AUTH_TOKEN}"  # token for repo or for the shared runner. Path: https://gitlab.com/groups/financial/-/runners button Register a group runner -> token
+  token = "${RUNNER_AUTH_TOKEN}"  # token for repo or for the shared runner. Path: https://gitlab.com/groups/gatsbyfinancial/-/runners button Register a group runner -> token
   executor = "custom"
   builds_dir = "/tmp/build"
   cache_dir = "/tmp/cache"
@@ -25,7 +25,5 @@ check_interval = 0  # Defines the interval length, in seconds, between new jobs 
     Shared = true
     [runners.cache.s3]
     ServerAddress = "s3.amazonaws.com"
-      AccessKey = ""
-      SecretKey = "" # iam with s3 access
-      BucketName = "gitlab-cache"
+      BucketName = "gatsby-gitlab-cache"
       BucketLocation = "us-east-1"

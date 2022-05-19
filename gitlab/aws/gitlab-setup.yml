@@ -232,6 +232,7 @@ Resources:
                   - "ssm:GetParametersByPath"
                   - "iam:PassRole"
                   - "ec2:Describe*"
+                  - "ecr:*"
                 Resource: "*"
 
   FargateSecurityGroup:
@@ -292,6 +293,7 @@ Resources:
                   - "iam:PassRole"
                   - "ssm:GetParametersByPath"
                   - "ssm:GetParameter"
+                  - "ecr:*"
                 Resource: "*"
 
   ####################################################

@@ -135,7 +135,7 @@ Resources:
   ServiceApi:
     Type: AWS::ECS::Service
     Properties:
-      ServiceName: !Sub ${ServiceName}_api_fargate
+      ServiceName: !GetAtt ServiceApi.Name
       Cluster:
         Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
       LaunchType: FARGATE
@@ -155,18 +155,6 @@ Resources:
             - Fn::ImportValue: !Sub ${EnvironmentName}:PrivateSubnetOne
             - Fn::ImportValue: !Sub ${EnvironmentName}:PrivateSubnetTwo
 
-  ECSServiceAutoScalingRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: [ application-autoscaling.amazonaws.com ]
-            Action: [ "sts:AssumeRole" ]
-      ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole'
-
     # Enable autoscaling for the service
   ScalableTarget:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
@@ -178,10 +166,11 @@ Resources:
           - '/'
           - - service
             - Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
-            - !Ref 'ServiceApi'
+            - !GetAtt ServiceApi.Name
       MinCapacity: 2
-      MaxCapacity: 10
-      RoleARN: !Ref ECSServiceAutoScalingRole
+      MaxCapacity: 26
+      RoleARN:
+        Fn::ImportValue: !Sub ${EnvironmentName}:AutoscalingRole
 
     # Create scaling policies that describe how to scale the service up and down.
   ScaleDownPolicy:
@@ -195,7 +184,7 @@ Resources:
           - '/'
           - - service
             - Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
-            - !Ref 'ServiceApi'
+            - !GetAtt ServiceApi.Name
       ScalableDimension: 'ecs:service:DesiredCount'
       ServiceNamespace: 'ecs'
       StepScalingPolicyConfiguration:
@@ -217,20 +206,23 @@ Resources:
           - '/'
           - - service
             - Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
-            - !Ref 'ServiceApi'
+            - !GetAtt ServiceApi.Name
       ScalableDimension: 'ecs:service:DesiredCount'
       ServiceNamespace: 'ecs'
       StepScalingPolicyConfiguration:
         AdjustmentType: 'ChangeInCapacity'
         StepAdjustments:
-          - MetricIntervalLowerBound: 0
-            MetricIntervalUpperBound: 15
-            ScalingAdjustment: 1
-          - MetricIntervalLowerBound: 15
-            MetricIntervalUpperBound: 25
+          - MetricIntervalLowerBound: 30
+            MetricIntervalUpperBound: 50
             ScalingAdjustment: 2
-          - MetricIntervalLowerBound: 25
-            ScalingAdjustment: 3
+          - MetricIntervalLowerBound: 50
+            MetricIntervalUpperBound: 60
+            ScalingAdjustment: 4
+          - MetricIntervalLowerBound: 60
+            MetricIntervalUpperBound: 80
+            ScalingAdjustment: 8
+          - MetricIntervalLowerBound: 80
+            ScalingAdjustment: 10
         MetricAggregationType: 'Average'
         Cooldown: 60
 
@@ -244,7 +236,7 @@ Resources:
       Namespace: AWS/ECS
       Dimensions:
         - Name: ServiceName
-          Value: !Ref 'ServiceApi'
+          Value: !GetAtt ServiceApi.Name
         - Name: ClusterName
           Value:
             Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
@@ -265,14 +257,14 @@ Resources:
       Namespace: AWS/ECS
       Dimensions:
         - Name: ServiceName
-          Value: !Ref 'ServiceApi'
+          Value: !GetAtt ServiceApi.Name
         - Name: ClusterName
           Value:
             Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
       Statistic: Average
       Period: 60
       EvaluationPeriods: 1
-      Threshold: 70
+      Threshold: 10
       ComparisonOperator: GreaterThanOrEqualToThreshold
       AlarmActions:
         - !Ref ScaleUpPolicy

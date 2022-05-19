@@ -152,6 +152,17 @@ Resources:
                   - "ssm:GetParametersByPath"
                 Resource: "*"
 
+  ECSServiceAutoScalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ application-autoscaling.amazonaws.com ]
+            Action: [ "sts:AssumeRole" ]
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole'
 
   ##################################################################
   #       Cluster Configuration
@@ -164,7 +175,7 @@ Resources:
       ClusterName: !Sub ${EnvironmentName}Cluster
       ClusterSettings:
         - Name: containerInsights
-          Value: disabled
+          Value: enabled
 
   LogGroup:
     Type: AWS::Logs::LogGroup
@@ -239,6 +250,11 @@ Outputs:
     Value: !GetAtt 'TasksExecutionRole.Arn'
     Export:
       Name: !Sub ${EnvironmentName}:TasksExecutionRole
+  ECSServiceAutoScalingRole:
+    Description: The ARN of the ECSServiceAutoScalingRole role
+    Value: !GetAtt 'ECSServiceAutoScalingRole.Arn'
+    Export:
+      Name: !Sub ${EnvironmentName}:AutoscalingRole
   LBSecurityGroup:
     Description: A security group used to allow containers to receive traffic
     Value: !Ref 'LBSecurityGroup'

@@ -4,6 +4,10 @@ Description: Version 13 Base 6F
 Parameters:
   EnvironmentName:
     Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
     Description: "The EnvironmentName used namespace all resources to allow different environments (uat, prod, rc)"
   ServiceName:
     Type: String
@@ -107,7 +111,7 @@ Resources:
       Memory: !If [ ProdEnv, "1GB", ".5GB" ]
       ContainerDefinitions:
         - Name: !Ref ServiceName
-          Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ServiceName}:latest
+          Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EnvironmentName}-${ServiceName}:latest
           Memory: !If [ ProdEnv, "1024", "512" ]
           PortMappings:
             - ContainerPort: 8080
@@ -137,7 +141,7 @@ Resources:
   ServiceApi:
     Type: AWS::ECS::Service
     Properties:
-      ServiceName: !Sub ${ServiceName}_api_fargate
+      ServiceName: !GetAtt ServiceApi.Name
       Cluster:
         Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
       LaunchType: FARGATE
