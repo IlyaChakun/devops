@@ -79,20 +79,25 @@ More here
 cache cdk-fargate-gitlab-runner/config_runner_template.toml at main · aws-samples/cdk-fargate-gitlab-runner
 
 Useful links
-config.toml options: Advanced configuration | GitLab
+https://docs.gitlab.com/runner/configuration/advanced-configuration.html#the-global-section
 
-Autoscaling GitLab deployments using AWS Fargate
+https://medium.com/@shantanujain92/autoscaling-gitlab-deployments-using-aws-fargate-a62f4baea181
 
-Serverless GitLab CI/CD on AWS Fargate
+https://medium.com/ci-t/serverless-gitlab-ci-cd-on-aws-fargate-da2a106ad39c
 
-Autoscaling GitLab CI on AWS Fargate | GitLab
+https://docs.gitlab.com/runner/configuration/runner_autoscale_aws_fargate/
 
-How to build containers with the AWS Fargate Custom Executor for GitLab Runner and AWS CodeBuild
 
-Proper way to automatically start and expose ssh when running my app container
+https://about.gitlab.com/blog/2020/07/31/aws-fargate-codebuild-build-containers-gitlab-runner/
 
-Gitlab Fargate unable to pull image during CI/CD
+https://stackoverflow.com/questions/28717814/proper-way-to-automatically-start-and-expose-ssh-when-running-my-app-container
+
+
+
+https://stackoverflow.com/questions/71934006/gitlab-fargate-unable-to-pull-image-during-ci-cd/71943101
+
 
 https://webera.blog/building-docker-images-without-docker-using-kaniko-gitlab-ci-and-aws-c85ee802a4b0
 
-cdk-fargate-gitlab-runner/config_runner_template.toml at main · aws-samples/cdk-fargate-gitlab-runner 
+
+https://github.com/aws-samples/cdk-fargate-gitlab-runner/blob/main/gitlab_ci_fargate_runner/docker_fargate_driver/config_runner_template.toml
