@@ -30,8 +30,6 @@ Gradle
 
 Default
 
-Open https://gitlab.com/gatsbyfinancial/devops/-/tree/master/gitlab,
-
 Go to runner folder
 
 Then one by one build and push all the existing templates
